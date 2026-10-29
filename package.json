@@ -1,0 +1,62 @@
+{
+  "name": "lab19-nestjs-cicd",
+  "version": "1.0.0",
+  "description": "ЛР 19: облачный деплой и CI/CD в GitHub Actions",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "start": "node scripts/docker.cjs up",
+    "start:prod": "node dist/main.js",
+    "stop": "node scripts/docker.cjs stop",
+    "status": "node scripts/docker.cjs status",
+    "logs": "node scripts/docker.cjs logs",
+    "configure": "node scripts/config.cjs",
+    "build:docker": "node scripts/docker.cjs build-optimized",
+    "test": "jest --runInBand",
+    "test:e2e": "node scripts/check-docker.cjs",
+    "ci:local": "node scripts/ci-local.cjs",
+    "demo": "node scripts/demo.cjs",
+    "demo:steps": "node scripts/demo.cjs --steps",
+    "verify:deploy": "node scripts/verify-deploy.cjs",
+    "seed": "node dist/seed.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.2.8",
+    "@nestjs/core": "11.2.8",
+    "@nestjs/platform-express": "11.2.8",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "class-validator": "^0.14.2",
+    "class-transformer": "^0.5.1",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3",
+    "@nestjs/typeorm": "11.0.3",
+    "typeorm": "0.3.31",
+    "@nestjs/passport": "11.0.5",
+    "@nestjs/jwt": "11.0.2",
+    "passport": "0.7.0",
+    "passport-local": "1.0.0",
+    "passport-jwt": "4.0.1",
+    "bcrypt": "6.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.3",
+    "@types/passport-local": "^1.0.38",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "jest": "30.5.2",
+    "ts-jest": "29.4.15",
+    "@types/jest": "^30.0.0"
+  },
+  "overrides": {
+    "multer": "2.5.0"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

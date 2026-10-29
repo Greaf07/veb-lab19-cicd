@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "tests",
+    "test",
+    "dist",
+    "verification",
+    "**/*.spec.ts"
+  ],
+  "include": [
+    "src/**/*.ts"
+  ],
+  "compilerOptions": {
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  }
+}
