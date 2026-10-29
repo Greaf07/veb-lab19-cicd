@@ -100,6 +100,8 @@ Variable CODESPACE_NAME = weary-coffin-69gvrwq9jvr5h5qv4.
 GITHUB_TOKEN создаётся автоматически; packages: write разрешает отправку в GHCR.
 Пароли БД, учебных аккаунтов и JWT_SECRET генерируются один раз внутри облака
 и хранятся в /workspaces/lab19-cloud/.env. В Git и журналы они не выводятся.
+В Codespaces API использует сетевой интерфейс контейнера БД
+(network_mode: service:db, DB_HOST=127.0.0.1); это обход блокировки Docker bridge.
 Публичен только HTTPS-порт приложения 3006. Порт PostgreSQL наружу не открыт.
 Секрет Windows .env отличается от облачного. Не заменять один другим.
 
