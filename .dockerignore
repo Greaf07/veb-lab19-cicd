@@ -16,3 +16,7 @@ tests
 coverage
 jest.config.cjs
 Procfile
+
+.vercel
+.vercelignore
+vercel.json

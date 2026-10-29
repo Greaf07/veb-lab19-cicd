@@ -1,6 +1,10 @@
 Лабораторная работа №19 по методичке (папка lab9)
 Развёртывание NestJS в облаке и настройка CI/CD
 
+СТАТУС: локальная часть, тесты в GitHub Actions и публикация образа выполнены.
+Облачный запуск пока не завершён: требуется подтверждение аккаунта Vercel.
+Подробные доказательства и ограничения — Проверка.txt.
+
 Основа — приложение лабораторной №18: NestJS, PostgreSQL, JWT и роли.
 Исходники прежних лабораторных не изменяются.
 
@@ -63,7 +67,9 @@ npm.cmd run build:docker. Эти проверки временно пересо�
    Это воспроизводимый вариант установки по package-lock.json для CI.
    Затем идут тесты, сборка NestJS, оптимизированный Docker-образ,
    настоящие проверки API/БД, отправка образа в GitHub Container Registry
-   и развёртывание в облаке. Health должен показать SHA нового коммита.
+   и подготовленный деплой в Vercel. Health должен показать SHA нового коммита.
+   В Vercel NestJS работает как Function, Docker-образ отдельно хранится в GHCR.
+   Это два способа запуска исходников одного коммита.
 3. Jest выполняется до сборки. При ненулевом коде выхода следующие шаги
    не выполняются. continue-on-error не используется. always() есть только
    у очистки тестовых контейнеров.
@@ -89,6 +95,40 @@ npm.cmd run build:docker. Эти проверки временно пересо�
 https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs
 https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images
 https://docs.nestjs.com/fundamentals/testing
+https://vercel.com/docs/frameworks/backend/nestjs
+https://vercel.com/kb/guide/how-can-i-use-github-actions-with-vercel
+https://neon.com/pricing
 
 Адрес репозитория, результаты удалённого запуска и адрес приложения
 фиксируются в Проверка.txt после фактического выполнения.
+
+
+КАК ЗАВЕРШИТЬ ОБЛАЧНУЮ НАСТРОЙКУ
+1. Завершить вход в Vercel и выбрать Hobby, без Pro trial и карты.
+   В Neon выбрать Free, создать отдельный проект veb-lab19 с PostgreSQL.
+2. Создать проект Vercel для этого NestJS-приложения. Рекомендуемый регион
+   базы — Frankfurt: он совпадает с fra1 в vercel.json.
+   В Production Environment Variables Vercel сохранить:
+     DATABASE_URL — строка подключения из Neon;
+     DB_SSL — true;
+     JWT_SECRET — отдельная случайная строка длиной не менее 32 символов.
+   Строку подключения и секрет не вставлять в Git, скриншоты или отчёт.
+3. В GitHub -> Settings -> Secrets and variables -> Actions добавить:
+     Secret VERCEL_TOKEN — токен Vercel с минимально доступными правами;
+     Variables VERCEL_ORG_ID, VERCEL_PROJECT_ID — ID из настроек Vercel;
+     Variable PUBLIC_URL — постоянный HTTPS-адрес приложения.
+4. Запустить workflow кнопкой Run workflow или push в main.
+   vercel.json отключает отдельный деплой Git-интеграции, чтобы публикацию
+   выполнял именно Actions после тестов. Не включать второй автодеплой.
+5. Дождаться успеха всех шагов, открыть PUBLIC_URL/health и сравнить version
+   с SHA запуска. Пока этого нет, облачная часть считается незавершённой.
+
+Vercel CLI устанавливается в Actions автоматически (версия 65.7.0).
+CLI выполняет pull -> build --prod -> deploy --prebuilt --prod.
+Предварительная сборка формирует формат Vercel Function. Приложение при этом
+сохраняет локальный запуск в Docker и PostgreSQL, как в предыдущей работе.
+.vercel, локальные .env и результаты проверок исключены из публикации.
+
+Бесплатные сервисы имеют лимиты и могут приостанавливать неактивную базу.
+Перед защитой открыть /health и дождаться ответа. При исчерпании лимита
+не переходить на платный тариф автоматически.

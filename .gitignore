@@ -7,3 +7,5 @@ verification/
 *.tsbuildinfo
 
 coverage/
+
+.vercel/
