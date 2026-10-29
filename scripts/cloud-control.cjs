@@ -4,7 +4,7 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const action = process.argv[2] || 'start';
-if (!['start', 'stop', 'status'].includes(action)) throw new Error('Use start, stop or status.');
+if (!['start', 'stop', 'status', 'demo', 'verify-restart'].includes(action)) throw new Error('Unknown cloud operation.');
 const bundled = path.join(os.homedir(), 'Documents', 'Codex', 'tools', 'github-cli', 'runtime', 'bin', 'gh.exe');
 const executable = process.env.GH_BIN || (process.platform === 'win32' && fs.existsSync(bundled) ? bundled : 'gh');
 const repository = 'Greaf07/veb-lab19-cicd';

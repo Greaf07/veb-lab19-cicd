@@ -17,7 +17,7 @@ async function verify() {
     } catch {}
     await new Promise(resolve => setTimeout(resolve, 10000));
   }
-  throw new Error('Новая версия не стала доступна. Проверьте журнал Northflank.');
+  throw new Error('Новая версия не стала доступна. Проверьте журнал Codespaces в GitHub Actions.');
 }
 
 verify().catch(error => { console.error(error.message); process.exitCode = 1; });

@@ -8,7 +8,7 @@ on:
         type: choice
         required: true
         default: start
-        options: [start, stop, status]
+        options: [start, stop, status, demo, verify-restart]
 
 permissions:
   contents: read

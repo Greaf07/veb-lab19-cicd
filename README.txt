@@ -1,12 +1,31 @@
 Лабораторная работа №19 по методичке (папка lab9)
 Развёртывание NestJS в облаке и настройка CI/CD
 
-СТАТУС: локальная часть, тесты в GitHub Actions и публикация образа выполнены.
-Облачный запуск пока не завершён: требуется подтверждение аккаунта Vercel.
-Подробные доказательства и ограничения — Проверка.txt.
+Основа — приложение ЛР №18: NestJS, PostgreSQL, JWT и роли.
+Репозиторий: https://github.com/Greaf07/veb-lab19-cicd
+Образ: ghcr.io/greaf07/veb-lab19-cicd
+Проверенные результаты и ссылки — Проверка.txt.
+Порядок защиты по каждой строке задания — Защита.txt.
 
-Основа — приложение лабораторной №18: NestJS, PostgreSQL, JWT и роли.
-Исходники прежних лабораторных не изменяются.
+БЫСТРОЕ ВКЛЮЧЕНИЕ ОБЛАКА ПЕРЕД ЗАЩИТОЙ
+Из папки lab9: npm.cmd run cloud:start
+Команда запускает cloud.yml в GitHub Actions и ждёт успешного /health.
+HTTPS-адрес находится в Summary запуска. Пересборка для включения не нужна.
+На этом компьютере Node.js и авторизованный GitHub CLI уже подготовлены.
+Через сайт: Actions -> Start or stop lab19 for defense -> Run workflow -> start.
+После показа: npm.cmd run cloud:stop
+Для проверки API в облаке: npm.cmd run cloud:demo
+Состояние среды: npm.cmd run cloud:status
+Полная проверка сохранения записи при остановке и включении среды:
+  npm.cmd run cloud:verify-restart
+Эта проверка действительно останавливает среду на короткое время; запускать
+до демонстрации. Она удаляет только свою временную тестовую задачу.
+Подробности и инструкция для следующего включения — ЗАПУСК_ПЕРЕД_ЗАЩИТОЙ.txt.
+
+Codespaces здесь используется как учебная облачная среда с Docker и PostgreSQL.
+Это не постоянный production-хостинг: при простое среда останавливается.
+Перед защитой запустить за 5–10 минут. Данные БД хранятся в /workspaces/lab19-cloud/postgres.
+Остановка Codespace их сохраняет. Удаление всей среды удаляет и её данные.
 
 ЛОКАЛЬНЫЙ ЗАПУСК НА WINDOWS
 Нужны Node.js 24.x, npm и запущенный Docker Desktop с Linux-контейнерами.
@@ -60,75 +79,58 @@ npm.cmd run build:docker. Эти проверки временно пересо�
 
 ЧТО СДЕЛАНО ПО ЗАДАНИЯМ
 1. main.ts получает порт через getPort(process.env.PORT), по умолчанию 3000.
-   HOST по умолчанию 0.0.0.0. Procfile запускает node dist/main.js.
-   npm run build выполняет nest build.
-2. .github/workflows/deploy.yml запускается при push в main.
-   После checkout и setup-node устанавливаются зависимости через npm ci.
-   Это воспроизводимый вариант установки по package-lock.json для CI.
-   Затем идут тесты, сборка NestJS, оптимизированный Docker-образ,
-   настоящие проверки API/БД, отправка образа в GitHub Container Registry
-   и подготовленный деплой в Vercel. Health должен показать SHA нового коммита.
-   В Vercel NestJS работает как Function, Docker-образ отдельно хранится в GHCR.
-   Это два способа запуска исходников одного коммита.
-3. Jest выполняется до сборки. При ненулевом коде выхода следующие шаги
-   не выполняются. continue-on-error не используется. always() есть только
-   у очистки тестовых контейнеров.
+   HOST=0.0.0.0. Procfile содержит web: node dist/main.js.
+   npm run build запускает nest build.
+2. deploy.yml: push в main -> checkout -> setup-node -> npm ci -> Jest ->
+   сборка NestJS -> оптимизированный Docker-образ -> E2E с PostgreSQL ->
+   публикация образа в GHCR -> загрузка того же образа в Codespaces -> /health.
+   npm ci — установка точных версий из package-lock.json для CI.
+   Тег образа равен SHA коммита. В облаке образ не пересобирается.
+   Скрипт codespace.cjs подключается через авторизованный SSH GitHub CLI,
+   remote-codespace.sh загружает Compose именно этого коммита и запускает образ.
+3. npm run test выполняется после установки зависимостей, до сборки.
+   Ошибка Jest останавливает следующие обычные шаги. always() применяется
+   только к очистке тестовых контейнеров на runner GitHub Actions.
+
+ОБЛАЧНАЯ КОНФИГУРАЦИЯ
+Secret CODESPACES_TOKEN — отдельный fine-grained токен только репозитория lab9,
+срок до 28 ноября 2026. Codespaces и Codespaces lifecycle admin: read/write;
+Codespaces metadata, Contents и обязательные Metadata: read-only.
+Variable CODESPACE_NAME = weary-coffin-69gvrwq9jvr5h5qv4.
+GITHUB_TOKEN создаётся автоматически; packages: write разрешает отправку в GHCR.
+Пароли БД, учебных аккаунтов и JWT_SECRET генерируются один раз внутри облака
+и хранятся в /workspaces/lab19-cloud/.env. В Git и журналы они не выводятся.
+Публичен только HTTPS-порт приложения 3006. Порт PostgreSQL наружу не открыт.
+Секрет Windows .env отличается от облачного. Не заменять один другим.
+
+На новом аккаунте эта настройка сама не появляется: потребуется создать свой
+Codespace, изменить имя/репозиторий в скриптах и настроить свой scoped-токен.
+Для показа с другого ПК достаточно войти на сайт GitHub владельцем и запустить workflow.
+Терминальный вариант: Node.js + GitHub CLI, затем gh auth login и cloud:start.
+
+ОГРАНИЧЕНИЯ И ВОССТАНОВЛЕНИЕ
+Не включать платный тариф автоматически. GitHub Free имеет лимиты времени
+и хранения; остановленная среда продолжает занимать хранилище.
+При истечении токена обновить CODESPACES_TOKEN с теми же правами и новым сроком.
+При удалённом Codespace сначала восстановить/создать среду и настроить её имя,
+затем выполнить полный deploy.yml. cloud:start предназначен для уже развёрнутой среды.
+Если cloud:start не прошёл, открыть журнал Actions; он не сообщает успех без /health.
+Локальный резерв работает независимо от Codespaces: npm.cmd start.
 
 СТРУКТУРА
-  src/             — исходный NestJS-код
-  tests/           — тесты порта, пароля/JWT, ролей, задач и health
-  scripts/         — локальный запуск, проверка и демонстрация
-  .github/workflows/deploy.yml — конвейер GitHub Actions
-  Dockerfile       — двухэтапная production-сборка из предыдущей работы
-  Procfile         — команда запуска для совместимых PaaS
-  answers.txt      — ответы на 5 контрольных вопросов
-  Защита.txt       — порядок показа преподавателю
-  Проверка.txt     — фактически выполненные проверки и облачный статус
-  verification/    — локальные результаты запусков, не включаются в Git
-
-Секреты не публикуются: .env исключён из Git и Docker-контекста.
-В облаке используются отдельные настройки PostgreSQL и JWT_SECRET.
-В production-образе отсутствуют исходники, тесты, Nest CLI и TypeScript;
-процесс работает от пользователя node.
+src/ — NestJS; tests/ — Jest; scripts/ — запуск, проверки и демонстрация.
+.github/workflows/deploy.yml — автоматический полный CI/CD.
+.github/workflows/cloud.yml — быстрое управление облаком без пересборки.
+Dockerfile — двухэтапная production-сборка, процесс от пользователя node.
+Procfile — команда для платформ, поддерживающих этот формат; Docker использует CMD.
+answers.txt — 5 ответов; Защита.txt — показ по заданию; Проверка.txt — доказательства.
+verification/ — локальные отчёты, не включаются в Git.
 
 ОФИЦИАЛЬНЫЕ ИСТОЧНИКИ
 https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs
 https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images
 https://docs.nestjs.com/fundamentals/testing
-https://vercel.com/docs/frameworks/backend/nestjs
-https://vercel.com/kb/guide/how-can-i-use-github-actions-with-vercel
-https://neon.com/pricing
-
-Адрес репозитория, результаты удалённого запуска и адрес приложения
-фиксируются в Проверка.txt после фактического выполнения.
-
-
-КАК ЗАВЕРШИТЬ ОБЛАЧНУЮ НАСТРОЙКУ
-1. Завершить вход в Vercel и выбрать Hobby, без Pro trial и карты.
-   В Neon выбрать Free, создать отдельный проект veb-lab19 с PostgreSQL.
-2. Создать проект Vercel для этого NestJS-приложения. Рекомендуемый регион
-   базы — Frankfurt: он совпадает с fra1 в vercel.json.
-   В Production Environment Variables Vercel сохранить:
-     DATABASE_URL — строка подключения из Neon;
-     DB_SSL — true;
-     JWT_SECRET — отдельная случайная строка длиной не менее 32 символов.
-   Строку подключения и секрет не вставлять в Git, скриншоты или отчёт.
-3. В GitHub -> Settings -> Secrets and variables -> Actions добавить:
-     Secret VERCEL_TOKEN — токен Vercel с минимально доступными правами;
-     Variables VERCEL_ORG_ID, VERCEL_PROJECT_ID — ID из настроек Vercel;
-     Variable PUBLIC_URL — постоянный HTTPS-адрес приложения.
-4. Запустить workflow кнопкой Run workflow или push в main.
-   vercel.json отключает отдельный деплой Git-интеграции, чтобы публикацию
-   выполнял именно Actions после тестов. Не включать второй автодеплой.
-5. Дождаться успеха всех шагов, открыть PUBLIC_URL/health и сравнить version
-   с SHA запуска. Пока этого нет, облачная часть считается незавершённой.
-
-Vercel CLI устанавливается в Actions автоматически (версия 65.7.0).
-CLI выполняет pull -> build --prod -> deploy --prebuilt --prod.
-Предварительная сборка формирует формат Vercel Function. Приложение при этом
-сохраняет локальный запуск в Docker и PostgreSQL, как в предыдущей работе.
-.vercel, локальные .env и результаты проверок исключены из публикации.
-
-Бесплатные сервисы имеют лимиты и могут приостанавливать неактивную базу.
-Перед защитой открыть /health и дождаться ответа. При исчерпании лимита
-не переходить на платный тариф автоматически.
+https://cli.github.com/manual/gh_codespace_ssh
+https://cli.github.com/manual/gh_codespace_ports
+https://docs.github.com/en/codespaces/troubleshooting/troubleshooting-included-usage
+https://docs.github.com/en/codespaces/setting-your-user-preferences/configuring-automatic-deletion-of-your-codespaces

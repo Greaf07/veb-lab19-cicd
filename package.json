@@ -23,7 +23,9 @@
     "seed": "node dist/seed.js",
     "cloud:start": "node scripts/cloud-control.cjs start",
     "cloud:stop": "node scripts/cloud-control.cjs stop",
-    "cloud:status": "node scripts/cloud-control.cjs status"
+    "cloud:status": "node scripts/cloud-control.cjs status",
+    "cloud:demo": "node scripts/cloud-control.cjs demo",
+    "cloud:verify-restart": "node scripts/cloud-control.cjs verify-restart"
   },
   "dependencies": {
     "@nestjs/common": "11.2.8",

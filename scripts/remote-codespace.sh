@@ -25,7 +25,15 @@ if [ "$mode" = deploy ]; then
 services:
   api:
     image: ghcr.io/greaf07/veb-lab19-cicd:$version
+    # Codespaces currently drops traffic between custom Docker bridge interfaces.
+    # Share only the database container's network; do not change the host firewall.
+    network_mode: service:db
+    environment:
+      DB_HOST: 127.0.0.1
+    ports: !reset []
   db:
+    ports:
+      - "127.0.0.1:3006:3000"
     volumes:
       - /workspaces/lab19-cloud/postgres:/var/lib/postgresql/data
 EOF
@@ -57,9 +65,14 @@ done
 docker info >/dev/null
 compose=(docker compose -p veb-lab19-cloud --env-file .env -f compose.yml -f cloud.yml)
 if [ "$mode" = deploy ]; then
-  "${compose[@]}" pull api db
+  "${compose[@]}" pull --quiet api db
+  "${compose[@]}" stop api
 fi
-"${compose[@]}" up -d --no-build --wait --wait-timeout 180
+if ! "${compose[@]}" up -d --no-build --wait --wait-timeout 180; then
+  "${compose[@]}" ps
+  "${compose[@]}" logs --no-color --tail 40 api
+  exit 1
+fi
 curl --fail --silent --show-error http://127.0.0.1:3006/health
 echo
 if [ "$mode" = deploy ]; then

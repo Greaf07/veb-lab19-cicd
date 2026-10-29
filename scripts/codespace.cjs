@@ -5,7 +5,7 @@ const { spawnSync } = require('node:child_process');
 const mode = process.argv[2] || 'start';
 const name = process.env.CODESPACE_NAME;
 if (!name || !/^[a-z0-9-]+$/.test(name)) throw new Error('Set CODESPACE_NAME.');
-if (!['deploy', 'start', 'stop', 'status'].includes(mode)) throw new Error('Unknown operation.');
+if (!['deploy', 'start', 'stop', 'status', 'demo', 'verify-restart'].includes(mode)) throw new Error('Unknown operation.');
 if (!process.env.GH_TOKEN) throw new Error('Configure CODESPACES_TOKEN in GitHub Actions Secrets.');
 
 function gh(args, input, capture = false) {
@@ -25,15 +25,26 @@ async function main() {
     return;
   }
   if (mode === 'status') {
-    const result = gh(['codespace', 'list', '-R', 'Greaf07/veb-lab19-cicd', '--json', 'name,state,machineName'], undefined, true);
+    const result = gh(['api', `user/codespaces/${name}`, '--jq', '{name,state,idle_timeout_minutes,retention_period_minutes,retention_expires_at,billable_owner:.billable_owner.login,machine:.machine.display_name}'], undefined, true);
     console.log(result);
     return;
   }
   const version = mode === 'deploy' ? process.env.EXPECTED_VERSION : '';
   if (mode === 'deploy' && !/^[0-9a-f]{40}$/.test(version || '')) throw new Error('Set EXPECTED_VERSION to the commit SHA.');
-  const script = fs.readFileSync(path.join(__dirname, 'remote-codespace.sh'), 'utf8');
+  const script = fs.readFileSync(path.join(__dirname, 'remote-codespace.sh'), 'utf8').replace(/\r\n/g, '\n');
   // gh starts a stopped Codespace before connecting through its authenticated SSH relay.
-  gh(['codespace', 'ssh', '-c', name, '--', `bash -s -- ${mode} ${version}`], script);
+  gh(['codespace', 'ssh', '-c', name, '--', `bash -s -- ${mode === 'deploy' ? 'deploy' : 'start'} ${version}`], script);
+  if (mode === 'verify-restart') {
+    const check = fs.readFileSync(path.join(__dirname, 'cloud-check.cjs'), 'utf8');
+    gh(['codespace', 'ssh', '-c', name, '--', 'cd /workspaces/lab19-cloud && node - before'], check);
+    gh(['codespace', 'stop', '-c', name]);
+    gh(['codespace', 'ssh', '-c', name, '--', 'bash -s -- start'], script);
+    gh(['codespace', 'ssh', '-c', name, '--', 'cd /workspaces/lab19-cloud && node - after'], check);
+  }
+  if (mode === 'demo') {
+    const demo = fs.readFileSync(path.join(__dirname, 'demo-api.cjs'), 'utf8');
+    gh(['codespace', 'ssh', '-c', name, '--', 'cd /workspaces/lab19-cloud && node -'], demo);
+  }
   gh(['codespace', 'ports', 'visibility', '3006:public', '-c', name]);
   const ports = JSON.parse(gh(['codespace', 'ports', '-c', name, '--json', 'sourcePort,browseUrl,visibility'], undefined, true));
   const port = ports.find(item => item.sourcePort === 3006);
