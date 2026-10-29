@@ -20,7 +20,10 @@
     "demo": "node scripts/demo.cjs",
     "demo:steps": "node scripts/demo.cjs --steps",
     "verify:deploy": "node scripts/verify-deploy.cjs",
-    "seed": "node dist/seed.js"
+    "seed": "node dist/seed.js",
+    "cloud:start": "node scripts/cloud-control.cjs start",
+    "cloud:stop": "node scripts/cloud-control.cjs stop",
+    "cloud:status": "node scripts/cloud-control.cjs status"
   },
   "dependencies": {
     "@nestjs/common": "11.2.8",

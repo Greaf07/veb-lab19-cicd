@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lab19-${{ github.ref }}
+  group: lab19-cloud
   cancel-in-progress: false
 
 jobs:
@@ -59,25 +59,18 @@ jobs:
           docker tag veb-lab19:optimized "$IMAGE:latest"
           docker push "$IMAGE:$GITHUB_SHA"
           docker push "$IMAGE:latest"
-      - name: Deploy NestJS to Vercel
+      - name: Deploy tested image to Codespaces
+        id: deployment
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-        run: |
-          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Configure VERCEL_TOKEN secret and VERCEL_ORG_ID / VERCEL_PROJECT_ID variables. Cloud deployment is not configured yet."
-            exit 1
-          fi
-          npm install --global vercel@65.7.0 --no-audit --no-fund
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel build --prod --token="$VERCEL_TOKEN"
-          vercel deploy --prebuilt --prod --env APP_VERSION="$GITHUB_SHA" --token="$VERCEL_TOKEN"
+          GH_TOKEN: ${{ secrets.CODESPACES_TOKEN }}
+          CODESPACE_NAME: ${{ vars.CODESPACE_NAME }}
+          EXPECTED_VERSION: ${{ github.sha }}
+        run: node scripts/codespace.cjs deploy
       - name: Verify deployed version and database
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
-          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          PUBLIC_URL: ${{ steps.deployment.outputs.public_url }}
           EXPECTED_VERSION: ${{ github.sha }}
         run: npm run verify:deploy
       - name: Stop local test containers

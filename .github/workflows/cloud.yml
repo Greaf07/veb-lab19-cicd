@@ -1,0 +1,35 @@
+name: Start or stop lab19 for defense
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Cloud operation
+        type: choice
+        required: true
+        default: start
+        options: [start, stop, status]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab19-cloud
+  cancel-in-progress: false
+
+jobs:
+  cloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.19.0'
+          package-manager-cache: false
+      - name: Manage teaching Codespace
+        env:
+          GH_TOKEN: ${{ secrets.CODESPACES_TOKEN }}
+          CODESPACE_NAME: ${{ vars.CODESPACE_NAME }}
+          CLOUD_ACTION: ${{ inputs.action }}
+        run: node scripts/codespace.cjs "$CLOUD_ACTION"
