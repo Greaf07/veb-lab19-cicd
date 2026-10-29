@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const mode = process.argv[2] || 'start';
 const name = process.env.CODESPACE_NAME;
@@ -16,6 +16,32 @@ function gh(args, input, capture = false) {
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`GitHub CLI failed (${result.status}).`);
   return result.stdout?.trim();
+}
+
+function getPorts() {
+  return JSON.parse(gh(['codespace', 'ports', '-c', name, '--json', 'sourcePort,browseUrl,visibility'], undefined, true));
+}
+
+async function ensurePort() {
+  if (getPorts().some(port => port.sourcePort === 3006)) return;
+  // The forward command creates a missing tunnel port. Port 0 chooses a free local port.
+  // The temporary local forwarder is stopped; the public HTTPS tunnel belongs to Codespaces.
+  const forwarder = spawn(process.env.GH_BIN || 'gh', ['codespace', 'ports', 'forward', '3006:0', '-c', name], {
+    stdio: ['ignore', 'ignore', 'inherit'], windowsHide: true,
+  });
+  let startError;
+  forwarder.on('error', error => { startError = error; });
+  try {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (startError) throw startError;
+      if (getPorts().some(port => port.sourcePort === 3006)) return;
+      if (forwarder.exitCode !== null) throw new Error('Port forwarder exited before creating port 3006.');
+    }
+    throw new Error('Timed out creating the application port.');
+  } finally {
+    forwarder.kill('SIGTERM');
+  }
 }
 
 async function main() {
@@ -45,8 +71,9 @@ async function main() {
     const demo = fs.readFileSync(path.join(__dirname, 'demo-api.cjs'), 'utf8');
     gh(['codespace', 'ssh', '-c', name, '--', 'cd /workspaces/lab19-cloud && node -'], demo);
   }
+  await ensurePort();
   gh(['codespace', 'ports', 'visibility', '3006:public', '-c', name]);
-  const ports = JSON.parse(gh(['codespace', 'ports', '-c', name, '--json', 'sourcePort,browseUrl,visibility'], undefined, true));
+  const ports = getPorts();
   const port = ports.find(item => item.sourcePort === 3006);
   if (!port || port.visibility !== 'public' || !port.browseUrl?.startsWith('https://')) {
     throw new Error('The public HTTPS port was not created.');
